@@ -20,10 +20,14 @@ type Config struct {
 	LoggingPretty bool   `mapstructure:"LOGGING_PRETTY"`
 	LoggingLevel  string `mapstructure:"LOGGING_LEVEL"`
 
-	PostgresHost   string `mapstructure:"POSTGRES_HOST"`
-	PostgresUser   string `mapstructure:"POSTGRES_USER"`
-	PostgresPass   string `mapstructure:"POSTGRES_PASS"`
-	PostgresDbName string `mapstructure:"POSTGRES_DB_NAME"`
+	PostgresConnStr string `mapstructure:"POSTGRES_CONN_STR" validate:"required"`
+
+	GoogleOauthRedirectUrl  string   `mapstructure:"GOOGLE_OAUTH_REDIRECT_URL"`
+	GoogleOauthClientId     string   `mapstructure:"GOOGLE_OAUTH_CLIENT_ID" validate:"required"`
+	GoogleOauthClientSecret string   `mapstructure:"GOOGLE_OAUTH_CLIENT_SECRET" validate:"required"`
+	GoogleOauthScopes       []string `mapstructure:"GOOGLE_OAUTH_SCOPES"`
+
+	SessionSecret string `mapstructure:"SESSION_SECRET" validate:"required"`
 }
 
 func InitConfig(dotEnvFilenames ...string) (*Config, error) {
@@ -61,12 +65,13 @@ func NewConfig() (*Config, error) {
 
 func setDefaults() {
 	var defaults = map[string]any{
-		"SERVER_HOST":          "0.0.0.0:8000",
-		"SERVER_READ_TIMEOUT":  15,
-		"SERVER_SHUTDOWN_WAIT": 3,
-		"LOGGING_PRETTY":       true,
-		"LOGGING_LEVEL":        "debug",
-		"POSTGRES_HOST":        "127.0.0.1",
+		"SERVER_HOST":               "0.0.0.0:8000",
+		"SERVER_READ_TIMEOUT":       15,
+		"SERVER_SHUTDOWN_WAIT":      3,
+		"LOGGING_PRETTY":            true,
+		"LOGGING_LEVEL":             "debug",
+		"GOOGLE_OAUTH_REDIRECT_URL": "http://localhost:8000/auth/google/callback",
+		"GOOGLE_OAUTH_SCOPES":       []string{"https://www.googleapis.com/auth/userinfo.email"},
 	}
 
 	for key, value := range defaults {

@@ -6,6 +6,9 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
+	"github.com/sunba23/news/api/middleware"
+	"github.com/sunba23/news/internal/database"
 	"github.com/sunba23/news/internal/news"
 )
 
@@ -13,12 +16,24 @@ type NewsHandler struct {
 	App news.App
 }
 
-func (nh *NewsHandler) HandleAllNews(w http.ResponseWriter, r *http.Request) {
+func HandleRoot(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("welcome 2 newsapp"))
+}
+
+func (h *NewsHandler) HandleAllNews(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value(middleware.UserContextKey).(*database.User)
+	if !ok || user == nil {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
+
+	log.Info().Msg("viewing all news; authenticated - user existing in db")
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(news.JsonNews)
 }
 
-func (nh *NewsHandler) HandleNewsByIndex(w http.ResponseWriter, r *http.Request) {
+func (h *NewsHandler) HandleNewsById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 

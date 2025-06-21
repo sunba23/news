@@ -13,7 +13,7 @@ import (
 
 const timestampFormat = "2006-01-02T15:04:05.999Z07:00"
 
-func SetUp(cnf *config.Config) {
+func SetUpLogging(cnf *config.Config) {
 	zerolog.TimestampFunc = func() time.Time {
 		return time.Now().UTC()
 	}

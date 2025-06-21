@@ -12,11 +12,24 @@ import (
 func NewHttpHandler(app news.App) http.Handler {
 	router := mux.NewRouter()
 
-	router.Use(middleware.LoggingMiddleware)
-
+	authHandler := handler.NewAuthHandler(app)
 	newsHandler := handler.NewsHandler{App: app}
-	router.HandleFunc("/news", newsHandler.HandleAllNews).Methods(http.MethodGet)
-	router.HandleFunc("/news/{id:[0-9]+}", newsHandler.HandleNewsByIndex).Methods(http.MethodGet)
+
+	authenticationMiddleware := middleware.NewAuthenticationMiddleware()
+	userContextMiddleware := middleware.NewUserContextMiddleware(authHandler.SessionStore, app)
+
+	router.Use(middleware.LoggingMiddleware, userContextMiddleware)
+	router.HandleFunc("/", handler.HandleRoot)
+
+	authSubRouter := router.PathPrefix("/auth/google").Subrouter()
+	authSubRouter.HandleFunc("/login", authHandler.HandleGoogleLogin)
+	authSubRouter.HandleFunc("/callback", authHandler.HandleGoogleCallback)
+	authSubRouter.HandleFunc("/logout", authHandler.HandleLogout)
+
+	newsSubRouter := router.PathPrefix("/news").Subrouter()
+	newsSubRouter.HandleFunc("", newsHandler.HandleAllNews).Methods(http.MethodGet)
+	newsSubRouter.HandleFunc("/{id:[0-9]+}", newsHandler.HandleNewsById).Methods(http.MethodGet)
+	newsSubRouter.Use(authenticationMiddleware)
 
 	return router
 }
