@@ -10,7 +10,7 @@ INSERT INTO tags (name) VALUES
 ('docker'),
 ('kubernetes'),
 ('webdev'),
-('datascience'),
+('datascience'), 
 ('machinelearning'),
 ('algorithms')
 ON CONFLICT (name) DO NOTHING;

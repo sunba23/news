@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+src/config.py
+src/main.py
+src/models.py
+src/clients/__init__.py
+src/clients/api_client.py
+src/clients/db_client.py
+src/core.egg-info/PKG-INFO
+src/core.egg-info/SOURCES.txt
+src/core.egg-info/dependency_links.txt
+src/core.egg-info/requires.txt
+src/core.egg-info/top_level.txt

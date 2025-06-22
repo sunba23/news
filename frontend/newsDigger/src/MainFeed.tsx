@@ -1,30 +1,86 @@
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { ArticleCard } from "@/components/ArticleCard";
+import { useNews } from '@/hooks/useNews';
+import { useState, useEffect } from 'react';
 
-// Mock data for the article cards
-const articles = [
-  { id: 1, title: "Replace Windows, Not Your Device", description: "With the end of Windows 10 support, users are encouraged to...", tags: ["linux", "opensuse"], publishedDate: "Published December 2021", gradient: "from-pink-500 to-purple-600" },
-  { id: 2, title: "The Rise of Serverless GPUs", description: "How cloud providers are changing the game for AI/ML workloads...", tags: ["serverless", "ai"], publishedDate: "Published January 2022", gradient: "from-blue-500 to-teal-400" },
-  { id: 3, title: "A Deep Dive into Rust's Memory Safety", description: "Exploring the borrow checker and why it's a game-changer...", tags: ["rust", "systems"], publishedDate: "Published February 2022", gradient: "from-orange-500 to-yellow-400" },
-  { id: 4, title: "Mastering React Server Components", description: "A look at the future of the React ecosystem and what it means...", tags: ["react", "webdev"], publishedDate: "Published March 2022", gradient: "from-sky-400 to-cyan-300" },
-  { id: 5, title: "Is HTMX the Future of Web Dev?", description: "Challenging the SPA paradigm with a simpler, server-centric model...", tags: ["htmx", "go"], publishedDate: "Published April 2022", gradient: "from-green-400 to-lime-300" },
-  { id: 6, title: "Optimizing Your CI/CD Pipeline", description: "Best practices for faster, more reliable deployments in 2022...", tags: ["devops", "ci-cd"], publishedDate: "Published May 2022", gradient: "from-indigo-500 to-violet-500" },
+// Gradient colors for visual variety
+const gradients = [
+  "from-pink-500 to-purple-600",
+  "from-blue-500 to-teal-400",
+  "from-orange-500 to-yellow-400",
+  "from-sky-400 to-cyan-300",
+  "from-green-400 to-lime-300",
+  "from-indigo-500 to-violet-500"
 ];
 
 export default function FeedPage() {
+  const { news, loading, error } = useNews();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen w-full bg-gray-100">
+        <Sidebar />
+        <div className="flex flex-1 flex-col">
+          <Header />
+          <main className="flex-1 p-6 flex items-center justify-center">
+            <div className="text-lg">Loading news...</div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen w-full bg-gray-100">
+        <Sidebar />
+        <div className="flex flex-1 flex-col">
+          <Header />
+          <main className="flex-1 p-6 flex items-center justify-center">
+            <div className="text-lg text-red-600">{error}</div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  // Add debugging
+  console.log('News data:', news);
+
   return (
     <div className="flex min-h-screen w-full bg-gray-100">
       <Sidebar />
       <div className="flex flex-1 flex-col">
         <Header />
         <main className="flex-1 p-6">
-          {/* Responsive Grid for the articles */}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {articles.map(article => (
-              <ArticleCard key={article.id} {...article} />
-            ))}
+            {Array.isArray(news) && news.map((article, index) => {
+              // Use correct backend field names (capitalized)
+              const title = article?.Title || 'No title available';
+              const content = article?.Content || '';
+              const description = content.length > 150 ? content.substring(0, 150) + "..." : content;
+              const tags = Array.isArray(article?.Tags) ? article.Tags.map(tag => tag?.Name || 'Unknown').filter(Boolean) : [];
+              const publishedDate = article?.CreatedAt ? new Date(article.CreatedAt).toLocaleDateString() : 'Unknown date';
+              
+              return (
+                <ArticleCard 
+                  key={article?.ID || index} 
+                  id={article?.ID || index}
+                  title={title}
+                  description={description || 'No description available'}
+                  tags={tags}
+                  publishedDate={publishedDate}
+                  gradient={gradients[index % gradients.length]}
+                />
+              );
+            })} 
           </div>
+          {!Array.isArray(news) && (
+            <div className="text-center p-6">
+              <p className="text-gray-500">No news articles available</p>
+            </div>
+          )}
         </main>
       </div>
     </div>

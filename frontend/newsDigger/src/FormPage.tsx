@@ -14,6 +14,6 @@ export default function FormPage(){
         <div className="flex min-h-screen w-full items-center justify-center p-4">
         <Form/>
         </div>
-        </div>
+        </div> 
     )
 }
