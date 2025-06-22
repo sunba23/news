@@ -7,9 +7,11 @@ import psycopg
 from psycopg.sql import SQL
 from psycopg import rows
 
+
 class QueryType(Enum):
-    READ = 1 
+    READ = 1
     WRITE = 2
+
 
 class DbClient(ABC):
     @abstractmethod
@@ -42,9 +44,10 @@ class PgClient(DbClient):
                     conn.commit()
                     return cur.rowcount
 
-
     def get_tags(self) -> list[Tag]:
-        row_list: list[rows.TupleRow] = self.run_query(SQL("SELECT name FROM tags"), QueryType.READ)
+        row_list: list[rows.TupleRow] = self.run_query(
+            SQL("SELECT name FROM tags"), QueryType.READ
+        )
         return [Tag(name=str(row[0]).lower()) for row in row_list]
 
     def save_news(self, news: list[News]) -> int:
