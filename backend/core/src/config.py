@@ -12,7 +12,7 @@ class Config:
         if not self.api_key:
             raise ValueError("NEWSAPI_KEY environment variable is not set")
 
-        self.setDefaults()
+        self.set_defaults()
 
-    def setDefaults(self) -> None:
+    def set_defaults(self) -> None:
         self.timeout: timedelta = timedelta(minutes=10)
