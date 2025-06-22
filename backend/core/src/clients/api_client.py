@@ -19,7 +19,13 @@ class NewsApiClient(ApiClient):
         self.client = NewsApiClientC(api_key=config.api_key)
 
     def get_news(self, tags: list[Tag]) -> list[News]:
-        query = self.construct_query(tags)
+        news_list=[]
+        for tag in tags:
+            news_list.append(self.get_news_for_tag(tag))
+        return news_list
+    
+    def get_news_for_tag(self, tag: Tag) -> list[News]:
+        query = self.construct_query(tag)
         from_param = (datetime.today() - relativedelta(months=1)).strftime("%Y-%m-%d")
         news = self.client.get_everything(
             q=query,
@@ -29,7 +35,7 @@ class NewsApiClient(ApiClient):
             page=2,
         )
         news_entries = news.get("articles", [])
-        return self.parse_news(news_entries)
+        return self.parse_news(news_entries, tag)
 
     @staticmethod
     def construct_query(tags: list[Tag]) -> str:
@@ -41,13 +47,13 @@ class NewsApiClient(ApiClient):
         return out
 
     @staticmethod
-    def parse_news(news_entries) -> list[News]:
+    def parse_news(news_entries, tag: Tag) -> list[News]:
         news_list = []
         for news in news_entries:
             title = news.get("title", "")
             content = news.get("content", "") or news.get("description", "")
             author = news.get("author", "") or "Unknown"
 
-            news_item = News(title=title, content=content, author=author)
+            news_item = News(title=title, content=content, author=author, tag=tag.name)
             news_list.append(news_item)
         return news_list
