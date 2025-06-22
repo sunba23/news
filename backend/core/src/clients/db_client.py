@@ -48,63 +48,39 @@ class PgClient(DbClient):
         row_list: list[rows.TupleRow] = self.run_query(
             SQL("SELECT name FROM tags"), QueryType.READ
         )
-        return [Tag(name=str(row[0]).lower()) for row in row_list]
+        return [Tag(name=str(row[0])) for row in row_list]
 
     def save_news(self, news: list[News]) -> int:
         if not news:
             return 0
-        
+
         total_news_added = 0
 
-        with self.get_connection() as conn:
-            with conn.cursor() as cur:
-                for article in news:
-                    # Insert news
-                    cur.execute(
-                        SQL("""
-                            INSERT INTO news (title, content, author, created_at)
-                            VALUES ({title}, {content}, {author}, CURRENT_TIMESTAMP)
-                            RETURNING id
-                        """).format(
-                            title=Literal(article.title),
-                            content=Literal(article.content),
-                            author=Literal(article.author)
-                        )
-                    )
-                    news_id = cur.fetchone()[0]
+        for article in news:
+            query = SQL("""
+                WITH inserted_news AS (
+                    INSERT INTO news (title, content, author, created_at)
+                    VALUES ({title}, {content}, {author}, CURRENT_TIMESTAMP)
+                    RETURNING id
+                ),
+                matched_tags AS (
+                    SELECT id FROM tags 
+                    WHERE name = ANY({tags}::text[])
+                )
+                INSERT INTO news_tags (news_id, tag_id)
+                SELECT n.id, t.id
+                FROM inserted_news n
+                CROSS JOIN matched_tags t
+                ON CONFLICT DO NOTHING
+            """).format(
+                title=Literal(article.title),
+                content=Literal(article.content),
+                author=Literal(article.author),
+                tags=Literal(article.tags)
+            )
 
-                    for tag_name in article.tags:
-                        # Try to insert tag
-                        cur.execute(
-                            SQL("""
-                                INSERT INTO tags (name)
-                                VALUES ({tag_name})
-                                ON CONFLICT (name) DO NOTHING
-                            """).format(tag_name=Literal(tag_name.lower()))
-                        )
-
-                        # Get tag id
-                        cur.execute(
-                            SQL("""
-                                SELECT id FROM tags WHERE name = {tag_name}
-                            """).format(tag_name=Literal(tag_name.lower()))
-                        )
-                        tag_id = cur.fetchone()[0]
-
-                        # News-tag relationship
-                        cur.execute(
-                            SQL("""
-                                INSERT INTO news_tags (news_id, tag_id)
-                                VALUES ({news_id}, {tag_id})
-                                ON CONFLICT DO NOTHING
-                            """).format(
-                                news_id=Literal(news_id),
-                                tag_id=Literal(tag_id)
-                            )
-                        )
-
-                    total_news_added += 1
-
-                conn.commit()
+            count = self.run_query(query, QueryType.WRITE)
+            if count > 0:
+                total_news_added += 1
 
         return total_news_added
