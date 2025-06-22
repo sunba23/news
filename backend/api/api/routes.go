@@ -14,6 +14,8 @@ func NewHttpHandler(app news.App) http.Handler {
 
 	authHandler := handler.NewAuthHandler(app)
 	newsHandler := handler.NewsHandler{App: app}
+	tagsHandler := handler.TagsHandler{App: app}
+	userHandler := handler.UserHandler{App: app}
 
 	authenticationMiddleware := middleware.NewAuthenticationMiddleware()
 	userContextMiddleware := middleware.NewUserContextMiddleware(authHandler.SessionStore, app)
@@ -27,9 +29,22 @@ func NewHttpHandler(app news.App) http.Handler {
 	authSubRouter.HandleFunc("/logout", authHandler.HandleLogout)
 
 	newsSubRouter := router.PathPrefix("/news").Subrouter()
-	newsSubRouter.HandleFunc("", newsHandler.HandleAllNews).Methods(http.MethodGet)
-	newsSubRouter.HandleFunc("/{id:[0-9]+}", newsHandler.HandleNewsById).Methods(http.MethodGet)
+	newsSubRouter.HandleFunc("", newsHandler.HandleGetAllNews).Methods(http.MethodGet)
+	newsSubRouter.HandleFunc("/{id:[0-9]+}", newsHandler.HandleGetNewsById).Methods(http.MethodGet)
+	newsSubRouter.HandleFunc("/{id:[0-9]+}/tags", newsHandler.HandleGetTagsForNews).Methods(http.MethodGet)
 	newsSubRouter.Use(authenticationMiddleware)
+
+	tagsSubRouter := router.PathPrefix("/tags").Subrouter()
+	tagsSubRouter.HandleFunc("", tagsHandler.HandleGetAllTags).Methods(http.MethodGet)
+	tagsSubRouter.HandleFunc("/{id:[0-9]+}/news", tagsHandler.HandleGetNewsByTag).Methods(http.MethodGet)
+	tagsSubRouter.Use(authenticationMiddleware)
+
+	userSubRouter := router.PathPrefix("/user").Subrouter()
+	userSubRouter.HandleFunc("/tags", userHandler.HandleGetFavoriteTags).Methods(http.MethodGet)
+	userSubRouter.HandleFunc("/tags/{id:[0-9]+}", userHandler.HandleAddFavoriteTag).Methods(http.MethodPost)
+	userSubRouter.HandleFunc("/tags/{id:[0-9]+}", userHandler.HandleDeleteFavoriteTag).Methods(http.MethodDelete)
+	userSubRouter.HandleFunc("/news", userHandler.HandleGetFavoriteNews).Methods(http.MethodGet)
+	userSubRouter.Use(authenticationMiddleware)
 
 	return router
 }

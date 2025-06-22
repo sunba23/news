@@ -12,8 +12,8 @@ type User struct {
 }
 
 type Tag struct {
-	ID   int    `db:"id"`
-	Name string `db:"name"`
+	ID   int    `db:"id" json:"id"`
+	Name string `db:"name" json:"name"`
 }
 
 type News struct {

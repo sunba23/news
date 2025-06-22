@@ -9,13 +9,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/rs/zerolog/log"
+	"github.com/sunba23/news/constants"
 	"github.com/sunba23/news/internal/news"
-)
-
-type ContextKey int
-
-const (
-	UserContextKey ContextKey = iota
 )
 
 func NewUserContextMiddleware(store *sessions.CookieStore, app news.App) mux.MiddlewareFunc {
@@ -52,7 +47,7 @@ func NewUserContextMiddleware(store *sessions.CookieStore, app news.App) mux.Mid
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), UserContextKey, user)
+			ctx := context.WithValue(r.Context(), constants.UserIdContextKey, user.ID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

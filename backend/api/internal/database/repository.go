@@ -16,13 +16,11 @@ type Repository interface {
 	GetUserByGoogleID(ctx context.Context, googleID string) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 
-	GetTagsByNames(ctx context.Context, names []string) ([]Tag, error)
-	GetTag(ctx context.Context, name string) (*Tag, error)
+	GetAllTags(ctx context.Context) ([]Tag, error)
 
 	GetNewsByID(ctx context.Context, id int) (*News, error)
 	GetAllNews(ctx context.Context) ([]News, error)
 	GetNewsByTag(ctx context.Context, tagID int) ([]News, error)
-
 	GetTagsForNews(ctx context.Context, newsID int) ([]Tag, error)
 
 	AddFavoriteTag(ctx context.Context, userID string, tagID int) error
@@ -76,38 +74,16 @@ func (r *SQLRepository) GetUserByEmail(ctx context.Context, email string) (*User
 	return user, err
 }
 
-func (r *SQLRepository) GetTag(ctx context.Context, name string) (*Tag, error) {
-	tag := &Tag{}
-
-	query := `SELECT * FROM tags WHERE name = $1`
-	err := r.db.GetContext(ctx, tag, query, name)
-	if err == nil {
-		return tag, nil
+func (r *SQLRepository) GetAllTags(ctx context.Context) ([]Tag, error) {
+	var tags []Tag
+	query := `SELECT * FROM tags`
+	err := r.db.SelectContext(ctx, &tags, query)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
 	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
-	}
-
-	tag.Name = name
-	return tag, nil
-}
-
-func (r *SQLRepository) GetTagsByNames(ctx context.Context, names []string) ([]Tag, error) {
-	if len(names) == 0 {
-		return []Tag{}, nil
-	}
-
-	query, args, err := sqlx.In(
-		`SELECT * FROM tags WHERE name IN (?)`,
-		names,
-	)
 	if err != nil {
 		return nil, err
 	}
-
-	query = r.db.Rebind(query)
-	var tags []Tag
-	err = r.db.SelectContext(ctx, &tags, query, args...)
 	return tags, err
 }
 
@@ -131,8 +107,28 @@ func (r *SQLRepository) GetNewsByID(ctx context.Context, id int) (*News, error) 
 	return news, nil
 }
 
-func (r *SQLRepository) GetNewsByTag(ctx context.Context, tag int) ([]News, error) {
-	return nil, nil
+func (r *SQLRepository) GetNewsByTag(ctx context.Context, tagID int) ([]News, error) {
+	query := `
+			WITH filtered_news AS (
+				SELECT DISTINCT n.id
+				FROM news n
+				JOIN news_tags nt ON n.id = nt.news_id
+				WHERE nt.tag_id = $1
+			)
+			SELECT n.*, t.id AS tag_id, t.name AS tag_name
+			FROM news n
+			JOIN news_tags nt ON n.id = nt.news_id
+			JOIN tags t ON nt.tag_id = t.id
+			WHERE n.id IN (SELECT id FROM filtered_news)
+			ORDER BY n.created_at DESC
+    `
+
+	var newsWithTags []NewsWithTags
+	if err := r.db.SelectContext(ctx, &newsWithTags, query, tagID); err != nil {
+		return nil, fmt.Errorf("failed to get news by tag: %w", err)
+	}
+
+	return combineNewsWithTags(newsWithTags), nil
 }
 
 func (r *SQLRepository) GetAllNews(ctx context.Context) ([]News, error) {
