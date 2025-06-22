@@ -57,7 +57,8 @@ class PgClient(DbClient):
         total_news_added = 0
 
         for article in news:
-            query = SQL("""
+            query = SQL(
+                """
                 WITH inserted_news AS (
                     INSERT INTO news (title, content, author, created_at)
                     VALUES ({title}, {content}, {author}, CURRENT_TIMESTAMP)
@@ -72,11 +73,12 @@ class PgClient(DbClient):
                 FROM inserted_news n
                 CROSS JOIN matched_tags t
                 ON CONFLICT DO NOTHING
-            """).format(
+            """
+            ).format(
                 title=Literal(article.title),
                 content=Literal(article.content),
                 author=Literal(article.author),
-                tags=Literal(article.tags)
+                tags=Literal(article.tags),
             )
 
             count = self.run_query(query, QueryType.WRITE)

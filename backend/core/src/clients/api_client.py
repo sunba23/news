@@ -17,7 +17,7 @@ class ApiClient(ABC):
 class NewsApiClient(ApiClient):
     def __init__(self, config: Config) -> None:
         self.client = NewsApiClientC(api_key=config.api_key)
-    
+
     def get_news(self, tags: list[Tag]) -> list[News]:
         news_map = {}
 
