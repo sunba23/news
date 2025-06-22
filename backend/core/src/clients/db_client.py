@@ -4,7 +4,7 @@ from enum import Enum
 from models import News, Tag
 
 import psycopg
-from psycopg.sql import SQL
+from psycopg.sql import SQL, Literal
 from psycopg import rows
 
 
@@ -51,5 +51,60 @@ class PgClient(DbClient):
         return [Tag(name=str(row[0]).lower()) for row in row_list]
 
     def save_news(self, news: list[News]) -> int:
-        news_added: int = self.run_query(SQL(""), QueryType.WRITE)
-        return news_added
+        if not news:
+            return 0
+        
+        total_news_added = 0
+
+        with self.get_connection() as conn:
+            with conn.cursor() as cur:
+                for article in news:
+                    # Insert news
+                    cur.execute(
+                        SQL("""
+                            INSERT INTO news (title, content, author, created_at)
+                            VALUES ({title}, {content}, {author}, CURRENT_TIMESTAMP)
+                            RETURNING id
+                        """).format(
+                            title=Literal(article.title),
+                            content=Literal(article.content),
+                            author=Literal(article.author)
+                        )
+                    )
+                    news_id = cur.fetchone()[0]
+
+                    for tag_name in article.tags:
+                        # Try to insert tag
+                        cur.execute(
+                            SQL("""
+                                INSERT INTO tags (name)
+                                VALUES ({tag_name})
+                                ON CONFLICT (name) DO NOTHING
+                            """).format(tag_name=Literal(tag_name.lower()))
+                        )
+
+                        # Get tag id
+                        cur.execute(
+                            SQL("""
+                                SELECT id FROM tags WHERE name = {tag_name}
+                            """).format(tag_name=Literal(tag_name.lower()))
+                        )
+                        tag_id = cur.fetchone()[0]
+
+                        # News-tag relationship
+                        cur.execute(
+                            SQL("""
+                                INSERT INTO news_tags (news_id, tag_id)
+                                VALUES ({news_id}, {tag_id})
+                                ON CONFLICT DO NOTHING
+                            """).format(
+                                news_id=Literal(news_id),
+                                tag_id=Literal(tag_id)
+                            )
+                        )
+
+                    total_news_added += 1
+
+                conn.commit()
+
+        return total_news_added
