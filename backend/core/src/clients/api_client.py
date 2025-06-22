@@ -17,37 +17,45 @@ class ApiClient(ABC):
 class NewsApiClient(ApiClient):
     def __init__(self, config: Config) -> None:
         self.client = NewsApiClientC(api_key=config.api_key)
-
+    
     def get_news(self, tags: list[Tag]) -> list[News]:
-        query = self.construct_query(tags)
+        news_map = {}
+
+        for tag in tags:
+            news_entries = self.get_news_for_tag(tag)
+            for news in news_entries:
+                key = news.url
+                if key in news_map:
+                    if tag.name not in news_map[key].tags:
+                        news_map[key].tags.append(tag.name)
+                else:
+                    news.tags = [tag.name]
+                    news_map[key] = news
+
+        return list(news_map.values())
+
+    def get_news_for_tag(self, tag: Tag) -> list[News]:
+        query = tag.name
         from_param = (datetime.today() - relativedelta(months=1)).strftime("%Y-%m-%d")
-        news = self.client.get_everything(
+        response = self.client.get_everything(
             q=query,
             from_param=from_param,
             language="en",
             sort_by="publishedAt",
             page=2,
         )
-        news_entries = news.get("articles", [])
-        return self.parse_news(news_entries)
+        news_entries = response.get("articles", [])
+        return self.parse_news(news_entries, tag)
 
     @staticmethod
-    def construct_query(tags: list[Tag]) -> str:
-        out = ""
-        for idx, tag in enumerate(tags):
-            out += tag.name
-            if idx != len(tags) - 1:
-                out += " OR "
-        return out
-
-    @staticmethod
-    def parse_news(news_entries) -> list[News]:
+    def parse_news(news_entries, tag: Tag) -> list[News]:
         news_list = []
         for news in news_entries:
             title = news.get("title", "")
             content = news.get("content", "") or news.get("description", "")
             author = news.get("author", "") or "Unknown"
+            url = news.get("url", "")
 
-            news_item = News(title=title, content=content, author=author)
+            news_item = News(title=title, content=content, author=author, url=url)
             news_list.append(news_item)
         return news_list
