@@ -2,19 +2,21 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Rss, Settings, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { authApi } from "@/api";
 
 export function Sidebar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const menuItems = [
-    { name: "Feed", icon: Rss, isActive: true, path: "/MainFeed" },
-    { name: "Settings", icon: Settings, isActive: false, path: "/Settings" },
-    { name: "Log out", icon: LogOut, isActive: false, path: "/" },
-  ];
 
-  const handleItemClick = (path: string) => {
-    navigate(path);
+  const handleLogout = () => {
+    authApi.googleLogout();
   };
+
+  const menuItems = [
+    { name: "Feed", icon: Rss, isActive: true, onClick: () => navigate("/MainFeed"), path: "/MainFeed" },
+    { name: "Settings", icon: Settings, isActive: false, onClick: () => navigate("/Settings"), path: "/Settings" },
+    { name: "Log out", icon: LogOut, isActive: false, onClick: handleLogout, path: "/" },
+  ];
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -32,7 +34,7 @@ export function Sidebar() {
               "justify-start",
               isActive(item.path) && "bg-gray-200"
             )}
-            onClick={() => handleItemClick(item.path)}
+            onClick={item.onClick}
           >
             <item.icon className="mr-2 h-4 w-4" />
             {item.name}

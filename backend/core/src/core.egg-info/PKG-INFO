@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: core
+Version: 0.1.0
+Summary: Service for periodically fetching, tagging and then saving news to database.
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: newsapi-python>=0.2.7
+Requires-Dist: psycopg>=3.2.9
+Requires-Dist: python-dateutil>=2.9.0.post0
+Requires-Dist: python-dotenv>=1.1.0
