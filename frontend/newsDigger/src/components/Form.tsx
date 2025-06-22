@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useNavigate } from "react-router-dom";
 
 // Define our topics data
 const ALL_TOPICS = [
@@ -25,6 +26,13 @@ const ALL_TOPICS = [
 export default function OnboardingForm() {
   // State to hold the IDs of the selected topics
   const [selectedTopics, setSelectedTopics] = React.useState<string[]>([]);
+  const navigate = useNavigate();
+
+  const handleFormSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    console.log("Selected Topics:", selectedTopics);
+    navigate('/MainFeed');
+  };
 
   // Function to handle toggling a topic
   const handleTopicToggle = (topicId: string) => {
@@ -146,7 +154,7 @@ export default function OnboardingForm() {
             </form>
           </CardContent>
           <CardFooter>
-            <Button className="w-full bg-[#6D28D9] hover:bg-[#5B21B6] text-white">
+            <Button onClick={handleFormSubmit} className="w-full bg-[#6D28D9] hover:bg-[#5B21B6] text-white">
               Save & Go to Feed
             </Button>
           </CardFooter>

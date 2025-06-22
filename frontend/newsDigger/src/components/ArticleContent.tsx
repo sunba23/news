@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUp, ArrowDown, CalendarDays, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Define the props for the detailed article view
 interface ArticleContentProps {
@@ -14,11 +15,17 @@ interface ArticleContentProps {
 }
 
 export function ArticleContent({ title, tags, fullText, publishedDate, gradient, sourceUrl }: ArticleContentProps) {
+  const navigate = useNavigate();
+
+  const handleClose = () => {
+    navigate("/MainFeed");
+  }
+
   return (
     <Card className="w-full max-w-4xl">
       <CardHeader className="flex flex-row items-start justify-between">
         <CardTitle className="text-2xl">{title}</CardTitle>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={handleClose}>
           <X className="h-5 w-5" />
         </Button>
       </CardHeader>
